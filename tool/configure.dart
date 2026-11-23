@@ -40,6 +40,25 @@ void _android() {
   s = s.replaceFirst(RegExp(r'android:label="[^"]*"'), 'android:label="$appName"');
   f.writeAsStringSync(s);
   stdout.writeln('Updated ${f.path}');
+
+  // Release builds shrink code with R8, which strips the Room database that
+  // WorkManager (used by the Google Mobile Ads SDK) creates by reflection.
+  // Without these rules the app crashes on launch. Flutter's Gradle plugin
+  // picks up android/app/proguard-rules.pro automatically.
+  final rules = File('android/app/proguard-rules.pro');
+  const keep = '''
+# --- added by tool/configure.dart ---
+-keep class androidx.work.** { *; }
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+-keep class androidx.room.** { *; }
+-keep class com.google.android.gms.ads.** { *; }
+-dontwarn com.google.android.gms.**
+''';
+  final current = rules.existsSync() ? rules.readAsStringSync() : '';
+  if (!current.contains('added by tool/configure.dart')) {
+    rules.writeAsStringSync('$current$keep');
+    stdout.writeln('Updated ${rules.path}');
+  }
 }
 
 void _ios() {
