@@ -1,0 +1,52 @@
+# Installs the latest APK on an Android emulator, launches it, and records
+# the device log so start-up crashes can be diagnosed without a phone.
+name: Smoke test on emulator
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Build Android APK]
+    types: [completed]
+
+jobs:
+  smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Download latest APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download latest -R ${{ github.repository }} -p marble-sort.apk
+
+      - name: Run on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r marble-sort.apk
+            adb logcat -c
+            adb shell monkey -p com.jonathangames.marble_sort -c android.intent.category.LAUNCHER 1
+            sleep 25
+            adb logcat -d > logcat.txt || true
+            echo "===== app process ====="
+            adb shell pidof com.jonathangames.marble_sort || echo "APP NOT RUNNING (crashed or closed)"
+            echo "===== crash lines ====="
+            grep -E "FATAL|AndroidRuntime|flutter|E/|Exception|Error" logcat.txt | grep -v -E "chatty|SELinux" | head -150 || true
+            adb exec-out screencap -p > screen.png || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test
+          path: |
+            logcat.txt
+            screen.png
