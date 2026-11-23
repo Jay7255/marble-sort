@@ -1,0 +1,26 @@
+name: marble_sort
+description: A colour-sorting marble puzzle with rewarded and interstitial ads.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.38.1"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_mobile_ads: ^9.2.0
+  shared_preferences: ^2.5.6
+  audioplayers: ^6.8.1
+  google_fonts: ^9.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sounds/
