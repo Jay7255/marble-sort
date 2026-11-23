@@ -28,11 +28,14 @@ class MarbleSortApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = ThemeData(useMaterial3: true, brightness: Brightness.light);
     return MaterialApp(
       title: 'Marble Sort',
       debugShowCheckedModeBanner: false,
-      theme: base.copyWith(textTheme: GoogleFonts.getTextTheme('Fredoka', base.textTheme)),
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        fontFamily: GoogleFonts.getFont('Fredoka').fontFamily,
+      ),
       home: GameScreen(game: game),
     );
   }
